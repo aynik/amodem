@@ -12,7 +12,7 @@ from . import async_reader
 from . import audio
 from . import calib
 from . import main
-from .config import bitrates
+from .config import Configuration, bitrates
 
 
 try:
@@ -22,8 +22,15 @@ except ImportError:
 
 log = logging.getLogger('__name__')
 
-bitrate = os.environ.get('BITRATE', 1)
-config = bitrates.get(int(bitrate))
+bitrate = os.environ.get('BITRATE', None)
+if bitrate is not None:
+    config = bitrates.get(int(bitrate))
+else:
+    sample_rate = int(os.environ.get('SAMPLE_RATE', 8000))
+    n_points = int(os.environ.get('N_POINTS', 2))
+    frequencies = [int(f) for f in os.environ.get('FREQUENCIES', '2000').split(',')]
+    config = Configuration(Fs=sample_rate, Npoints=n_points, frequencies=frequencies)
+
 
 
 class Compressor:
