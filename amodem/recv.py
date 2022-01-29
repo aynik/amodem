@@ -194,8 +194,8 @@ class Receiver:
     def _constellation(self, y, symbols, title, index=None):
         if index is not None:
             Nfreq = len(self.frequencies)
-            height = np.floor(np.sqrt(Nfreq))
-            width = np.ceil(Nfreq / float(height))
+            height = np.int(np.floor(np.sqrt(Nfreq)))
+            width = np.int(np.ceil(Nfreq / float(height)))
             self.plt.subplot(height, width, index + 1)
 
         theta = np.linspace(0, 2*np.pi, 1000)

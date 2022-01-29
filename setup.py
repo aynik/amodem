@@ -24,7 +24,7 @@ setup(
     packages=['amodem'],
     tests_require=['pytest'],
     cmdclass={'test': PyTest},
-    install_requires=['numpy'],
+    install_requires=['numpy','reedsolo'],
     platforms=['POSIX'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',

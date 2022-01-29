@@ -18,11 +18,6 @@ def data(request):
     return request.param
 
 
-def test_checksum(data):
-    c = framing.Checksum()
-    assert c.decode(c.encode(data)) == data
-
-
 def test_framer(data):
     f = framing.Framer()
     encoded = concat(f.encode(data))

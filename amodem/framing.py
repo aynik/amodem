@@ -1,51 +1,31 @@
-import binascii
 import functools
 import itertools
 import logging
 import struct
+import reedsolo
 
 from . import common
 
 log = logging.getLogger(__name__)
 
-
-def _checksum_func(x):
-    return binascii.crc32(bytes(x))
-
-
-class Checksum:
-    fmt = '>L'  # unsigned longs (32-bit)
-    size = struct.calcsize(fmt)
-
-    def encode(self, payload):
-        checksum = _checksum_func(payload)
-        return struct.pack(self.fmt, checksum) + payload
-
-    def decode(self, data):
-        received, = struct.unpack(self.fmt, bytes(data[:self.size]))
-        payload = data[self.size:]
-        expected = _checksum_func(payload)
-        if received != expected:
-            log.warning('Invalid checksum: %08x != %08x', received, expected)
-            raise ValueError('Invalid checksum')
-        log.debug('Good checksum: %08x', received)
-        return payload
-
-
 class Framer:
-    block_size = 250
+    block_size = 255
     prefix_fmt = '>B'
     prefix_len = struct.calcsize(prefix_fmt)
-    checksum = Checksum()
+    ecc_symbols = 6
+    ecc_max_errors = 0
 
     EOF = b''
 
-    def _pack(self, block):
-        frame = self.checksum.encode(block)
+    def __init__(self):
+        self.ecc = reedsolo.RSCodec(self.ecc_symbols)
+
+    def _pack(self, block=None):
+        frame = self.ecc.encode(block)
         return bytearray(struct.pack(self.prefix_fmt, len(frame)) + frame)
 
     def encode(self, data):
-        for block in common.iterate(data=data, size=self.block_size,
+        for block in common.iterate(data=data, size=self.block_size - self.ecc_symbols,
                                     func=bytearray, truncate=False):
             yield self._pack(block=block)
         yield self._pack(block=self.EOF)
@@ -55,11 +35,13 @@ class Framer:
         while True:
             length, = _take_fmt(data, self.prefix_fmt)
             frame = _take_len(data, length)
-            block = self.checksum.decode(frame)
+            block, _, errata_pos = self.ecc.decode(frame)
+            self.ecc_max_errors = max(self.ecc_max_errors, len(errata_pos))
             if block == self.EOF:
                 log.debug('EOF frame detected')
+                if self.ecc_max_errors > 0:
+                    log.warning('Max errors corrected: %d', self.ecc_max_errors)
                 return
-
             yield block
 
 
