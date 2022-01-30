@@ -129,10 +129,14 @@ def create_parser(description, interface_factory):
     sender.add_argument(
         '--silence', type=float, default=0.0,
         help='Extra silence before sending the data (in seconds)')
+    sender.add_argument(
+        '--autoreconf-rate', type=int, default=0,
+        help='Activate automatic reconfiguration and send it using a given bitrate')
     sender.set_defaults(
         main=lambda config, args: main.send(
             config, src=wrap(Compressor, args.src, args.zlib), dst=args.dst,
-            gain=args.gain, extra_silence=args.silence
+            gain=args.gain, extra_silence=args.silence,
+            autoreconf_config=bitrates.get(args.autoreconf_rate) if args.autoreconf_rate > 0 else None,
         ),
         calib=lambda config, args: calib.send(
             config=config, dst=args.dst,
@@ -156,10 +160,14 @@ def create_parser(description, interface_factory):
     receiver.add_argument(
         '--plot', action='store_true', default=False,
         help='plot results using pylab module')
+    receiver.add_argument(
+        '--autoreconf', action='store_true', default=False,
+        help='Activate automatic reconfiguration using the current bitrate')
     receiver.set_defaults(
         main=lambda config, args: main.recv(
             config, src=args.src, dst=wrap(Decompressor, args.dst, args.zlib),
-            pylab=args.pylab, dump_audio=args.dump
+            pylab=args.pylab, dump_audio=args.dump,
+            autoreconf=args.autoreconf
         ),
         calib=lambda config, args: calib.recv(
             config=config, src=args.src, verbose=args.verbose,
