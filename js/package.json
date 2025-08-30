@@ -1,0 +1,9 @@
+{
+  "name": "amodem-js",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/common.js",
+  "scripts": {
+    "test": "node --test --experimental-test-coverage"
+  }
+}
